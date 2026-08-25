@@ -1,0 +1,6 @@
+{
+  "name": "Logistics Dashboard",
+  "description": "Logistics Operational Dashboard for Hub Madiun-Kediri",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .uiverse-navy-bg {
+    --sz: 14px;
+    --c0: #03050a;
+    --c1: #0f2e5c; /* Biru Dongker / Deep Navy Blue */
+    --ts: 50% / calc(var(--sz) * 8) calc(var(--sz) * 16);
+    --dot: var(--c1) 0 calc(var(--sz) * 0.78),
+      #fff0 calc(calc(var(--sz) * 0.78) + 1px) 100%;
+    --dot2: radial-gradient(circle at 90% 0%, var(--dot)) var(--ts),
+      radial-gradient(circle at 65% 0%, var(--dot)) var(--ts),
+      radial-gradient(circle at 40% 0%, var(--dot)) var(--ts),
+      radial-gradient(circle at 15% 0%, var(--dot)) var(--ts);
+    --cg1: conic-gradient(from -90deg at 5% 51%, var(--c0) 0 90deg, #fff0 0 100%)
+      var(--ts);
+    --cg2: conic-gradient(from -90deg at 25% 50%, var(--c1) 0 90deg, #fff0 0 100%)
+      var(--ts);
+    --cg3: conic-gradient(
+        from -90deg at 30% 38.5%,
+        var(--c0) 0 90deg,
+        #fff0 0 100%
+      )
+      var(--ts);
+    --cg4: conic-gradient(
+        from -90deg at 50% 37.5%,
+        var(--c1) 0 90deg,
+        #fff0 0 100%
+      )
+      var(--ts);
+    --cg5: conic-gradient(from -90deg at 55% 26%, var(--c0) 0 90deg, #fff0 0 100%)
+      var(--ts);
+    --cg6: conic-gradient(from -90deg at 75% 25%, var(--c1) 0 90deg, #fff0 0 100%)
+      var(--ts);
+    --cg7: conic-gradient(
+        from -90deg at 80% 13.5%,
+        var(--c0) 0 90deg,
+        #fff0 0 100%
+      )
+      var(--ts);
+    --cg8: conic-gradient(
+        from -90deg at 100% 12.5%,
+        var(--c1) 0 90deg,
+        #fff0 0 100%
+      )
+      var(--ts);
+
+    background: var(--dot2), var(--dot2),
+      radial-gradient(circle at 90% 100%, var(--dot)) var(--ts),
+      radial-gradient(circle at 65% 100%, var(--dot)) var(--ts),
+      radial-gradient(circle at 40% 100%, var(--dot)) var(--ts),
+      radial-gradient(circle at 15% 100%, var(--dot)) var(--ts),
+      radial-gradient(circle at 90% 12.5%, var(--dot)) var(--ts),
+      radial-gradient(circle at 65% 25%, var(--dot)) var(--ts),
+      radial-gradient(circle at 40% 37.5%, var(--dot)) var(--ts),
+      radial-gradient(circle at 15% 50%, var(--dot)) var(--ts), var(--cg1),
+      var(--cg1), var(--cg2), var(--cg2), var(--cg3), var(--cg3), var(--cg4),
+      var(--cg4), var(--cg5), var(--cg5), var(--cg6), var(--cg6), var(--cg7),
+      var(--cg7), var(--cg8), var(--cg8),
+      linear-gradient(-45deg, #fff0 0 32.25%, #0002 50%, #000 77.5%) var(--ts),
+      linear-gradient(-45deg, #fff0 0 32.25%, #000 60%) var(--ts),
+      repeating-linear-gradient(90deg, var(--c0) 0 5%, var(--c1) 0 25%) var(--ts);
+  }
+
+  .glossy-panel {
+    background: linear-gradient(180deg, rgba(16, 20, 30, 0.85) 0%, rgba(6, 8, 14, 0.95) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    transform: translateZ(0);
+  }
+
+  .glossy-card {
+    background: linear-gradient(180deg, rgba(25, 32, 48, 0.75) 0%, rgba(10, 13, 22, 0.9) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    transform: translateZ(0);
+  }
+
+  .glossy-card-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glossy-card-hover:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.8), 0 0 15px rgba(59, 130, 246, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .glossy-button {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .glossy-input {
+    background: rgba(8, 12, 20, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Leaflet Container & Glow Customization */
+.leaflet-container {
+  background-color: #030712 !important;
+  font-family: inherit;
+}
+
+.custom-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.route-glow-line {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8));
+}
+
+@keyframes roadMove {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes truckBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes wheelSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes headlightPulse {
+  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 16px rgba(251, 191, 36, 0.7)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 28px rgba(251, 191, 36, 0.95)); }
+}
+
+@keyframes roadGlowDash {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+.animate-wheel-spin {
+  animation: wheelSpin 0.8s linear infinite;
+}
+
+.animate-headlight-pulse {
+  animation: headlightPulse 2s ease-in-out infinite;
+}
+
