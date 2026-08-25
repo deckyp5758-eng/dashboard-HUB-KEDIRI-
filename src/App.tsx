@@ -402,7 +402,7 @@ export default function App() {
   }, []);
 
   if (loading) return (
-    <div className="relative min-h-screen bg-[#090b10] flex flex-col items-center justify-between text-zinc-100 overflow-hidden select-none">
+    <div className="relative min-h-[100dvh] bg-[#090b10] flex flex-col items-center justify-between text-zinc-100 overflow-hidden select-none">
       {/* Background Graphic Illustration (Responsive for Mobile & Desktop Widescreen) */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-[#0c1017]">
         <picture className="w-full h-full block">
@@ -413,37 +413,37 @@ export default function App() {
           <img
             src={hinoPortraitImg}
             alt="Hino Dutro Informa HUB Kediri Loading"
-            className="w-full h-full object-cover object-center scale-100"
+            className="w-full h-full object-cover object-center scale-[1.03]"
             loading="eager"
             decoding="sync"
           />
         </picture>
         {/* Soft Vignette and Gradient Overlay for optimal readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/85 via-transparent to-[#07090e]/95 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#07090e]/90 via-[#07090e]/15 to-[#07090e]/95 pointer-events-none"></div>
         <div className="absolute inset-0 bg-radial-vignette pointer-events-none opacity-50"></div>
       </div>
 
       {/* Spacing for layout balance */}
-      <div className="relative z-10 flex-1 flex items-center justify-center p-4">
+      <div className="relative z-10 flex-1 flex items-center justify-center px-4 py-8 pb-24 sm:pb-8">
         {/* Centered Brand Loading Section */}
-        <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-8 max-w-sm w-full bg-[#090b10]/70 backdrop-blur-md rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.6)] select-none animate-[fadeIn_0.5s_ease-out]">
+        <div className="relative z-10 flex flex-col items-center justify-center text-center px-5 py-7 sm:px-8 sm:py-9 max-w-[22rem] w-full bg-[#090b10]/80 backdrop-blur-xl rounded-2xl border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.7)] select-none animate-[fadeIn_0.5s_ease-out]">
           
           {/* Logo DApp */}
-          <div className="relative mb-4 flex justify-center w-full max-w-[180px] sm:max-w-[210px] drop-shadow-[0_4px_16px_rgba(0,240,255,0.25)]">
-            <DAppLogo className="w-full h-auto animate-pulse duration-1000" />
+          <div className="relative mb-5 flex h-36 sm:h-40 w-full max-w-[180px] sm:max-w-[210px] items-center justify-center drop-shadow-[0_4px_16px_rgba(0,240,255,0.25)]">
+            <DAppLogo className="h-full w-full animate-pulse duration-1000" />
           </div>
           
           {/* Nama Aplikasi Pelanggan / Platform */}
-          <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-widest uppercase">
+          <h2 className="text-[17px] sm:text-xl font-extrabold text-white tracking-[0.16em] uppercase leading-tight">
             HUB KEDIRI LOGISTICS
           </h2>
 
           {/* Loading Spinner */}
-          <div className="mt-6 flex flex-col items-center gap-1.5">
-            <div className="relative w-9 h-9 flex items-center justify-center">
+          <div className="mt-7 flex flex-col items-center gap-2">
+            <div className="relative w-10 h-10 flex items-center justify-center">
               <div className="absolute inset-0 rounded-full bg-cyan-400/25 blur-md animate-pulse"></div>
               <svg 
-                className="w-8 h-8 animate-wheel-spin drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]" 
+                className="w-9 h-9 animate-wheel-spin drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]"
                 viewBox="0 0 100 100" 
                 fill="none"
               >
@@ -456,7 +456,7 @@ export default function App() {
                 <line x1="60" y1="50" x2="82" y2="50" stroke="#bae6fd" strokeWidth="4" strokeLinecap="round" />
               </svg>
             </div>
-            <span className="text-[9px] font-bold tracking-widest text-zinc-400 uppercase">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-300 uppercase">
               MEMUAT DATA...
             </span>
           </div>
@@ -464,16 +464,16 @@ export default function App() {
       </div>
 
       {/* Floating Dynamic Fleet Badge at Bottom */}
-      <footer className="relative z-10 pb-8 sm:pb-10 px-4 w-full flex flex-col items-center">
-        <div className="glossy-panel backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/15 bg-black/40 shadow-2xl flex items-center gap-3 max-w-xs w-full justify-between">
+      <footer className="relative z-10 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-10 px-4 w-full flex flex-col items-center">
+        <div className="glossy-panel backdrop-blur-md px-4 py-3 rounded-2xl border border-white/15 bg-black/50 shadow-2xl flex items-center gap-3 max-w-sm w-full justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             <div className="text-left">
-              <div className="text-[11px] font-bold text-white tracking-wide">HINO DUTRO • INFORMA</div>
-              <div className="text-[9px] font-mono text-zinc-400">HUB KEDIRI LOGISTICS</div>
+              <div className="text-[11px] font-bold text-white tracking-[0.04em]">HINO DUTRO • INFORMA</div>
+              <div className="text-[9px] font-mono text-zinc-300">HUB KEDIRI LOGISTICS</div>
             </div>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
+          <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-200 border border-blue-400/30">
             JALUR ON-ROUTE
           </span>
         </div>
@@ -482,7 +482,7 @@ export default function App() {
   );
 
   if (error) return (
-    <div className="min-h-screen bg-[#07080b] flex items-center justify-center p-4 text-center">
+    <div className="min-h-[100dvh] bg-[#07080b] flex items-center justify-center p-4 text-center">
       <div className="glossy-panel p-6 rounded-2xl max-w-sm space-y-4 text-zinc-300 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.15)]">
         <p className="text-sm text-red-400 font-medium">{error}</p>
         <button 
@@ -496,7 +496,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen text-zinc-100 flex flex-col font-sans selection:bg-blue-500/30 relative overflow-x-hidden">
+    <div className="min-h-[100dvh] text-zinc-100 flex flex-col font-sans selection:bg-blue-500/30 relative overflow-x-hidden">
       {/* Uiverse Geometric Pattern (Biru Dongker / Navy & Deep Black) */}
       <div className="fixed inset-0 pointer-events-none z-0 uiverse-navy-bg opacity-75"></div>
       
@@ -559,7 +559,7 @@ export default function App() {
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-hide pb-28 relative z-10 flex flex-col justify-between"
+        className="flex-1 overflow-x-hidden overflow-y-auto scrollbar-hide pb-[calc(7rem+env(safe-area-inset-bottom))] relative z-10 flex flex-col justify-between"
       >
         <div className="w-full overflow-hidden">
           <motion.div 
@@ -578,7 +578,7 @@ export default function App() {
                 opacity: activeScreen === 'dashboard' ? 1 : 0,
               }}
             >
-              <div className="p-3 sm:p-4 space-y-4 max-w-7xl mx-auto">
+              <div className="p-4 sm:p-5 space-y-5 max-w-7xl mx-auto">
                 <OnDutyPanel data={personil} />
               </div>
             </div>
@@ -593,7 +593,7 @@ export default function App() {
                 opacity: activeScreen === 'pengiriman' ? 1 : 0,
               }}
             >
-              <div className="p-3 sm:p-4 max-w-7xl mx-auto">
+              <div className="p-4 sm:p-5 max-w-7xl mx-auto">
                 <ShippingPanel data={pengiriman} />
               </div>
             </div>
@@ -608,7 +608,7 @@ export default function App() {
                 opacity: activeScreen === 'analisisTren' ? 1 : 0,
               }}
             >
-              <div className="p-1 max-w-7xl mx-auto">
+              <div className="p-1 sm:p-2 max-w-7xl mx-auto">
                 <AnalisisTren data={analisisData} />
               </div>
             </div>
@@ -623,7 +623,7 @@ export default function App() {
                 opacity: activeScreen === 'profil' ? 1 : 0,
               }}
             >
-              <div className="p-3 sm:p-4 max-w-7xl mx-auto">
+              <div className="p-4 sm:p-5 max-w-7xl mx-auto">
                 <CoverageMapPanel />
               </div>
             </div>
@@ -631,14 +631,14 @@ export default function App() {
         </div>
 
         {/* Co-Branded Footer */}
-        <footer className="mt-12 mb-6 px-4 py-5 border-t border-white/[0.05] bg-[#0c0d15]/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left max-w-7xl mx-auto w-full rounded-2xl select-none">
+        <footer className="mt-10 mb-5 px-4 py-5 sm:px-6 border-t border-white/[0.08] bg-[#0c0d15]/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left max-w-7xl mx-auto w-[calc(100%-1rem)] sm:w-full rounded-2xl select-none">
           <div className="flex flex-col gap-0.5">
             <h3 className="text-xs sm:text-sm font-extrabold text-white tracking-wider flex items-center justify-center sm:justify-start">
               HUB KEDIRI LOGISTICS
             </h3>
           </div>
           <div className="flex items-center">
-            <div className="h-10 px-2.5 py-1.5 bg-black/40 rounded flex items-center justify-center border border-white/5 shadow-inner backdrop-blur-sm">
+            <div className="h-11 px-3 py-1.5 bg-black/50 rounded-xl flex items-center justify-center border border-white/10 shadow-inner backdrop-blur-sm">
               <DAppLogo className="h-7 w-auto" />
             </div>
           </div>
@@ -646,7 +646,7 @@ export default function App() {
       </main>
 
       {/* Glossy Obsidian Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#090a0f]/90 backdrop-blur-2xl border-t border-white/[0.08] px-4 py-2 flex justify-around items-center z-50 shadow-[0_-10px_35px_rgba(0,0,0,0.8)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#090a0f]/95 backdrop-blur-2xl border-t border-white/[0.1] px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex justify-around items-center z-50 shadow-[0_-10px_35px_rgba(0,0,0,0.8)]">
         {[
           { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
           { id: 'pengiriman', icon: Truck, label: 'Pengiriman' },
@@ -666,7 +666,7 @@ export default function App() {
                   setActiveScreen(item.id as any);
                 }
               }}
-              className={`relative flex flex-col items-center gap-1 py-1.5 px-3 rounded-xl transition-all duration-200 ${
+              className={`relative flex flex-col items-center gap-1 py-1.5 px-2.5 sm:px-3 rounded-xl transition-all duration-200 ${
                 isActive
                   ? 'text-white'
                   : 'text-zinc-500 hover:text-zinc-300'
@@ -676,7 +676,7 @@ export default function App() {
                 <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-blue-600/5 rounded-xl border border-blue-400/25 shadow-[0_0_15px_rgba(59,130,246,0.25)] -z-10"></div>
               )}
               <item.icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 text-blue-400' : ''}`} />
-              <span className={`text-[10px] tracking-tight ${isActive ? 'font-bold text-white' : 'font-medium'}`}>
+              <span className={`text-[10px] sm:text-[11px] tracking-tight ${isActive ? 'font-bold text-white' : 'font-medium'}`}>
                 {item.label}
               </span>
             </button>

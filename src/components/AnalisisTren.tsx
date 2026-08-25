@@ -108,7 +108,7 @@ export default function AnalisisTren({ data = [] }: AnalisisTrenProps) {
   }, [filteredData]);
 
   return (
-    <div className="p-3 sm:p-4 space-y-4 max-w-7xl mx-auto">
+    <div className="p-2 sm:p-4 space-y-4 max-w-7xl mx-auto">
       {/* Header & Filter Card */}
       <div className="glossy-panel rounded-2xl p-4 sm:p-5 shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -205,58 +205,58 @@ export default function AnalisisTren({ data = [] }: AnalisisTrenProps) {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="glossy-card glossy-card-hover p-4 rounded-2xl flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-400/25 flex items-center justify-center text-blue-400 shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="glossy-card glossy-card-hover p-3 sm:p-4 rounded-2xl flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-500/10 border border-blue-400/25 flex items-center justify-center text-blue-400 shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
             <Package className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold truncate">
               Total Volume DO
             </div>
-            <div className="text-lg sm:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+            <div className="text-base sm:text-xl font-extrabold text-white mt-0.5 tracking-tight">
               {kpis.totalDo.toLocaleString('id-ID')}
             </div>
           </div>
         </div>
 
-        <div className="glossy-card glossy-card-hover p-4 rounded-2xl flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-400/25 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+        <div className="glossy-card glossy-card-hover p-3 sm:p-4 rounded-2xl flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-500/10 border border-amber-400/25 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
             <Box className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold truncate">
               Total Volume CBM
             </div>
-            <div className="text-lg sm:text-xl font-extrabold text-amber-400 mt-0.5 tracking-tight">
+            <div className="text-base sm:text-xl font-extrabold text-amber-400 mt-0.5 tracking-tight">
               {kpis.totalCbm.toLocaleString('id-ID')} <span className="text-xs font-normal text-zinc-400">m³</span>
             </div>
           </div>
         </div>
 
-        <div className="glossy-card glossy-card-hover p-4 rounded-2xl flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-400/25 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+        <div className="glossy-card glossy-card-hover p-3 sm:p-4 rounded-2xl flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/10 border border-emerald-400/25 flex items-center justify-center text-emerald-400 shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
             <MapPin className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold truncate">
               Total Titik Drop
             </div>
-            <div className="text-lg sm:text-xl font-extrabold text-emerald-400 mt-0.5 tracking-tight">
+            <div className="text-base sm:text-xl font-extrabold text-emerald-400 mt-0.5 tracking-tight">
               {kpis.totalTitik.toLocaleString('id-ID')}
             </div>
           </div>
         </div>
 
-        <div className="glossy-card glossy-card-hover p-4 rounded-2xl flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-purple-500/10 border border-purple-400/25 flex items-center justify-center text-purple-400 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+        <div className="glossy-card glossy-card-hover p-3 sm:p-4 rounded-2xl flex items-center gap-2.5 sm:gap-3.5">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-500/10 border border-purple-400/25 flex items-center justify-center text-purple-400 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
             <Layers className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <div className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold truncate">
               Rata-rata CBM / Drop
             </div>
-            <div className="text-lg sm:text-xl font-extrabold text-purple-300 mt-0.5 tracking-tight">
+            <div className="text-base sm:text-xl font-extrabold text-purple-300 mt-0.5 tracking-tight">
               {kpis.avgCbmPerTitik} <span className="text-xs font-normal text-zinc-400">m³</span>
             </div>
             <div className="text-[9px] text-zinc-400 truncate mt-0.5 font-medium">
