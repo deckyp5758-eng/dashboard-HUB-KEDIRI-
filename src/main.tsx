@@ -15,7 +15,7 @@ if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
     });
 
     navigator.serviceWorker
-      .register('/sw.js')
+      .register('./sw.js')
       .then((registration) => {
         // Periksa pembaruan versi setiap 5 menit
         setInterval(() => {

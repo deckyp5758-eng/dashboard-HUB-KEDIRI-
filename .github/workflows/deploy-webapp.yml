@@ -39,10 +39,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
+
+      - name: Ensure Latest Logistics Data Snapshot Exists Before Build
+        env:
+          GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
+        run: |
+          mkdir -p public/data
+          if [ -n "$GAS_WEBAPP_URL" ]; then
+            echo "Menarik data terbaru dari GAS_WEBAPP_URL ke public/data/logistics-sync.json..."
+            curl -sSL --fail --max-time 30 "${GAS_WEBAPP_URL}?force=1" -o /tmp/logistics-build.json && \
+            node -e '
+              const fs = require("fs");
+              const d = JSON.parse(fs.readFileSync("/tmp/logistics-build.json", "utf8"));
+              if (d && Array.isArray(d.onDutyRows)) {
+                fs.writeFileSync("public/data/logistics-sync.json", JSON.stringify(d, null, 2));
+                console.log("Berhasil menyertakan data terbaru ke dalam build:", d.stats);
+              }
+            ' || echo "Menggunakan file public/data/logistics-sync.json yang ada di repo."
+          fi
 
       - name: Typecheck & Build Production Bundle
         run: |
@@ -54,7 +71,6 @@ jobs:
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Buat version.json di dist/ untuk pelacakan versi terbaru
           cat <<EOF > dist/version.json
           {
             "version": "1.0.${GITHUB_RUN_NUMBER}",
@@ -63,7 +79,6 @@ jobs:
           }
           EOF
 
-          # Ganti nama cache di dist/sw.js dengan commit SHA terbaru agar browser otomatis memuat versi terbaru
           if [ -f dist/sw.js ]; then
             sed -i "s/dapp-cache-v[0-9a-zA-Z_-]*/dapp-cache-${SHORT_SHA}/g" dist/sw.js
           fi
