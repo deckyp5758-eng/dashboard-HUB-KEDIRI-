@@ -1,0 +1,95 @@
+name: Build & Auto-Deploy Latest Web App
+
+on:
+  # 1. Otomatis deploy setiap ada commit baru (kode maupun data) di branch main
+  push:
+    branches: [main]
+
+  # 2. Otomatis deploy setelah workflow sinkronisasi data selesai
+  workflow_run:
+    workflows: ["Sync Logistics Data (Code.gs <-> GitHub)"]
+    types:
+      - completed
+
+  # 3. Bisa dijalankan manual kapan saja dari tab Actions
+  workflow_dispatch:
+
+# Jika ada beberapa perubahan beruntun, batalkan proses lama dan selalu deploy versi paling baru
+concurrency:
+  group: deploy-webapp-latest
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Latest Code & Synced Data
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Typecheck & Build Production Bundle
+        run: |
+          npm run lint
+          npm run build
+
+      - name: Stamp Build Version & Invalidate Old Service Worker Cache
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Buat version.json di dist/ untuk pelacakan versi terbaru
+          cat <<EOF > dist/version.json
+          {
+            "version": "1.0.${GITHUB_RUN_NUMBER}",
+            "commit": "${SHORT_SHA}",
+            "builtAt": "${BUILD_TIME}"
+          }
+          EOF
+
+          # Ganti nama cache di dist/sw.js dengan commit SHA terbaru agar browser otomatis memuat versi terbaru
+          if [ -f dist/sw.js ]; then
+            sed -i "s/dapp-cache-v[0-9a-zA-Z_-]*/dapp-cache-${SHORT_SHA}/g" dist/sw.js
+          fi
+
+      - name: Upload Production Artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Latest Version to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Trigger Live Server Cache Refresh (If Full-Stack APP_URL Configured)
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -n "$APP_URL" ]; then
+            echo "Menyegarkan cache di server utama: $APP_URL"
+            curl -sSL "${APP_URL%/}/api/logistics-data?force=true" > /dev/null || true
+          fi

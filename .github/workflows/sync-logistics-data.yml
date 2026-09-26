@@ -12,6 +12,10 @@ on:
   # 3. Bisa dijalankan manual kapan saja dari tab "Actions" di GitHub
   workflow_dispatch:
 
+concurrency:
+  group: sync-logistics-data
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -19,10 +23,13 @@ jobs:
   sync-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository (Latest Version)
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-      - name: Fetch Data from Google Apps Script (Code.gs)
+      - name: Fetch Latest Data from Google Apps Script (Code.gs)
         env:
           GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
         run: |
@@ -34,7 +41,6 @@ jobs:
           mkdir -p public/data
           curl -sSL --fail --max-time 30 "${GAS_WEBAPP_URL}?force=1" -o /tmp/logistics-raw.json
 
-          # Validasi bahwa file JSON valid dan memiliki array onDutyRows
           node -e '
             const fs = require("fs");
             const data = JSON.parse(fs.readFileSync("/tmp/logistics-raw.json", "utf8"));
@@ -46,6 +52,19 @@ jobs:
             console.log("Berhasil memvalidasi data:", data.stats);
           '
 
+      - name: Push Instant Update to Live Server Webhook (If Configured)
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          SYNC_WEBHOOK_SECRET: ${{ secrets.SYNC_WEBHOOK_SECRET }}
+        run: |
+          if [ -n "$APP_URL" ] && [ -n "$SYNC_WEBHOOK_SECRET" ]; then
+            echo "Mengirim data terbaru langsung ke Live Server Webhook..."
+            curl -sSL -X POST "${APP_URL%/}/api/sync/webhook" \
+              -H "Content-Type: application/json" \
+              -H "x-sync-secret: ${SYNC_WEBHOOK_SECRET}" \
+              --data-binary @public/data/logistics-sync.json || true
+          fi
+
       - name: Commit & Push Updated Data to Repository
         run: |
           git config user.name "github-actions[bot]"
@@ -54,7 +73,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "Tidak ada perubahan data baru dari Google Sheets."
           else
-            git commit -m "chore(data): auto-sync logistics data from Google Sheets [skip ci]"
-            git push
-            echo "Data terbaru berhasil di-commit ke repository!"
+            git commit -m "chore(data): auto-sync logistics data from Google Sheets"
+            git pull --rebase origin main
+            git push origin main
+            echo "✅ Data terbaru berhasil di-commit & di-push ke branch main!"
           fi

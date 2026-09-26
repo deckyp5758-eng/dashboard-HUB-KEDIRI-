@@ -338,12 +338,26 @@ export default function App() {
     }
     try {
       setError(null);
-      const url = isManual ? `/api/logistics-data?force=true&t=${Date.now()}` : `/api/logistics-data`;
-      const res = await fetchWithRetry(url, 2, 800);
-      const payload = await res.json();
+      let payload: any = null;
 
-      if (payload.status === 'error') {
-        throw new Error(payload.error || 'Gagal memuat data');
+      try {
+        const url = isManual ? `/api/logistics-data?force=true&t=${Date.now()}` : `/api/logistics-data`;
+        const res = await fetchWithRetry(url, 1, 600);
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          payload = await res.json();
+        }
+      } catch (apiErr) {
+        // Fallback ke file JSON statis hasil build GitHub Actions Workflow (untuk GitHub Pages / Static Hosting)
+      }
+
+      if (!payload || payload.status === 'error' || !Array.isArray(payload.onDutyRows)) {
+        const staticRes = await fetchWithRetry(`./data/logistics-sync.json?t=${Date.now()}`, 1, 600);
+        payload = await staticRes.json();
+      }
+
+      if (!payload || payload.status === 'error' || !Array.isArray(payload.onDutyRows)) {
+        throw new Error(payload?.error || 'Gagal memuat data');
       }
 
       applyPayloadToState(payload);

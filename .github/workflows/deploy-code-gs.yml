@@ -1,31 +1,39 @@
-name: Sync Code.gs (GitHub -> Google Apps Script)
+name: Sync & Auto-Deploy Code.gs (GitHub -> Google Apps Script)
 
 on:
   push:
     branches: [main]
     paths:
       - 'gas/**'
+      - '.github/workflows/deploy-code-gs.yml'
   workflow_dispatch:
 
+concurrency:
+  group: deploy-code-gs
+  cancel-in-progress: true
+
 jobs:
-  push-gas:
+  deploy-gas:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository (Latest Version)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Push gas/Code.gs to Google Apps Script via Clasp
+      - name: Push & Deploy Latest Version of Code.gs via Clasp
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+          GAS_DEPLOYMENT_ID: ${{ secrets.GAS_DEPLOYMENT_ID }}
         run: |
           if [ -z "$CLASPRC_JSON" ] || [ -z "$GAS_SCRIPT_ID" ]; then
-            echo "Info: CLASPRC_JSON atau GAS_SCRIPT_ID belum diatur di GitHub Secrets. Melewati auto-push Clasp."
+            echo "Info: CLASPRC_JSON atau GAS_SCRIPT_ID belum diatur di GitHub Secrets. Melewati auto-deploy Clasp."
             exit 0
           fi
 
@@ -37,5 +45,29 @@ jobs:
             "rootDir": "."
           }
           EOF
+
           cd gas
+
+          echo "1. Mendorong (Push) kode terbaru gas/Code.gs ke Google Apps Script..."
           clasp push --force
+
+          echo "2. Menentukan Deployment ID Web App agar URL /exec tetap sama namun menjalankan versi terbaru..."
+          TARGET_DEPLOYMENT_ID="$GAS_DEPLOYMENT_ID"
+
+          if [ -z "$TARGET_DEPLOYMENT_ID" ]; then
+            # Ambil deployment ID terakhir secara otomatis (selain @HEAD)
+            TARGET_DEPLOYMENT_ID=$(clasp deployments | grep -v "@HEAD" | awk '/- / {print $2}' | tail -n 1 || true)
+          fi
+
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          DEPLOY_DESC="Auto-deploy v${GITHUB_RUN_NUMBER} (${SHORT_SHA})"
+
+          if [ -n "$TARGET_DEPLOYMENT_ID" ]; then
+            echo "Memperbarui Web App Deployment ID: $TARGET_DEPLOYMENT_ID ke versi terbaru ($DEPLOY_DESC)..."
+            clasp deploy -i "$TARGET_DEPLOYMENT_ID" -d "$DEPLOY_DESC"
+          else
+            echo "Membuat Web App Deployment baru ($DEPLOY_DESC)..."
+            clasp deploy -d "$DEPLOY_DESC"
+          fi
+
+          echo "✅ Google Apps Script (Code.gs) berhasil di-deploy ke versi terbaru!"
