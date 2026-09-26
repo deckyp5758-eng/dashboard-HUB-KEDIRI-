@@ -1,0 +1,60 @@
+name: Sync Logistics Data (Code.gs <-> GitHub)
+
+on:
+  # 1. Dipicu otomatis oleh Code.gs saat ada perubahan di Google Sheets
+  repository_dispatch:
+    types: [sheets-updated]
+
+  # 2. Sinkronisasi berkala otomatis setiap 15 menit
+  schedule:
+    - cron: '*/15 * * * *'
+
+  # 3. Bisa dijalankan manual kapan saja dari tab "Actions" di GitHub
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Data from Google Apps Script (Code.gs)
+        env:
+          GAS_WEBAPP_URL: ${{ secrets.GAS_WEBAPP_URL }}
+        run: |
+          if [ -z "$GAS_WEBAPP_URL" ]; then
+            echo "::error::Secret GAS_WEBAPP_URL belum diatur di GitHub Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+          mkdir -p public/data
+          curl -sSL --fail --max-time 30 "${GAS_WEBAPP_URL}?force=1" -o /tmp/logistics-raw.json
+
+          # Validasi bahwa file JSON valid dan memiliki array onDutyRows
+          node -e '
+            const fs = require("fs");
+            const data = JSON.parse(fs.readFileSync("/tmp/logistics-raw.json", "utf8"));
+            if (!data || data.status === "error" || !Array.isArray(data.onDutyRows)) {
+              console.error("Respons JSON tidak valid:", data);
+              process.exit(1);
+            }
+            fs.writeFileSync("public/data/logistics-sync.json", JSON.stringify(data, null, 2));
+            console.log("Berhasil memvalidasi data:", data.stats);
+          '
+
+      - name: Commit & Push Updated Data to Repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/logistics-sync.json
+          if git diff --staged --quiet; then
+            echo "Tidak ada perubahan data baru dari Google Sheets."
+          else
+            git commit -m "chore(data): auto-sync logistics data from Google Sheets [skip ci]"
+            git push
+            echo "Data terbaru berhasil di-commit ke repository!"
+          fi

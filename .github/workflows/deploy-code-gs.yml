@@ -1,0 +1,41 @@
+name: Sync Code.gs (GitHub -> Google Apps Script)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gas/**'
+  workflow_dispatch:
+
+jobs:
+  push-gas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Push gas/Code.gs to Google Apps Script via Clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          GAS_SCRIPT_ID: ${{ secrets.GAS_SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ] || [ -z "$GAS_SCRIPT_ID" ]; then
+            echo "Info: CLASPRC_JSON atau GAS_SCRIPT_ID belum diatur di GitHub Secrets. Melewati auto-push Clasp."
+            exit 0
+          fi
+
+          npm install -g @google/clasp
+          echo "$CLASPRC_JSON" > ~/.clasprc.json
+          cat <<EOF > gas/.clasp.json
+          {
+            "scriptId": "$GAS_SCRIPT_ID",
+            "rootDir": "."
+          }
+          EOF
+          cd gas
+          clasp push --force

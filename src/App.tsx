@@ -4,13 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Loader2, LayoutDashboard, Truck, Users, MapPin, RotateCw, Database } from 'lucide-react';
+import { Loader2, LayoutDashboard, Truck, Users, MapPin, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import OnDutyPanel from './components/OnDutyPanel';
 import ShippingPanel from './components/ShippingPanel';
 import AnalisisTren from './components/AnalisisTren';
 import CoverageMapPanel from './components/CoverageMapPanel';
-import { SyncConfigModal } from './components/SyncConfigModal';
 import { Personil, Pengiriman, HubKediriData } from './types';
 import hinoPortraitImg from './assets/images/hino_portrait_decky_1787197718497.jpg';
 import hinoDesktopImg from './assets/images/hino_desktop_decky_1787197729757.jpg';
@@ -186,9 +185,6 @@ export default function App() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>('');
-  const [syncSource, setSyncSource] = useState<string>('sheets-api-cached');
-  const [syncStats, setSyncStats] = useState<{ onDutyCount: number; shippingCount: number; trendCount: number } | undefined>(undefined);
-  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   const applyPayloadToState = (payload: any) => {
     if (Array.isArray(payload.onDutyRows) && payload.onDutyRows.length > 0) {
@@ -333,13 +329,6 @@ export default function App() {
             };
           })
       );
-    }
-
-    if (payload.source) {
-      setSyncSource(payload.source);
-    }
-    if (payload.stats) {
-      setSyncStats(payload.stats);
     }
   };
 
@@ -535,30 +524,13 @@ export default function App() {
           </div>
 
           {/* Refresh and Branded Header Actions */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {lastUpdated && (
-              <div className="hidden md:flex flex-col items-end justify-center">
+              <div className="hidden sm:flex flex-col items-end justify-center">
                 <span className="text-[8px] font-bold text-zinc-500 tracking-widest uppercase">TERAKHIR DIPERBARUI</span>
                 <span className="text-[10px] font-semibold text-zinc-300 tracking-wide">{lastUpdated}</span>
               </div>
             )}
-
-            <button
-              onClick={() => setIsSyncModalOpen(true)}
-              className="h-8 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-300 flex items-center gap-1.5 text-[10px] font-bold tracking-wide transition-all cursor-pointer"
-              title="Konfigurasi Code.gs Apps Script & GitHub Sync"
-            >
-              <Database className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">
-                {syncSource === 'google-apps-script'
-                  ? 'Code.gs Aktif'
-                  : syncSource === 'github-sync'
-                  ? 'GitHub Sync'
-                  : syncSource === 'webhook-push'
-                  ? 'Live Webhook'
-                  : 'Sync & Code.gs'}
-              </span>
-            </button>
             
             <button
               onClick={() => fetchData(true)}
@@ -710,15 +682,6 @@ export default function App() {
           );
         })}
       </nav>
-      {/* Modal Konfigurasi Code.gs Apps Script & GitHub Sync */}
-      <SyncConfigModal
-        isOpen={isSyncModalOpen}
-        onClose={() => setIsSyncModalOpen(false)}
-        currentSource={syncSource}
-        lastUpdated={lastUpdated}
-        stats={syncStats}
-        onForceRefresh={() => fetchData(true)}
-      />
     </div>
   );
 }

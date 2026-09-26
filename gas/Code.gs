@@ -262,11 +262,53 @@ function pushPayloadToWebhook(payload) {
 }
 
 /**
+ * Memicu GitHub Actions Workflow (.github/workflows/sync-logistics-data.yml)
+ * Melalui event repository_dispatch "sheets-updated"
+ */
+function triggerGitHubWorkflow() {
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('GITHUB_TOKEN');
+  var repo = props.getProperty('GITHUB_REPO');
+
+  if (!token || !repo) {
+    return { skipped: true, reason: 'GITHUB_TOKEN atau GITHUB_REPO belum diatur.' };
+  }
+
+  var dispatchUrl = 'https://api.github.com/repos/' + repo + '/dispatches';
+  var res = UrlFetchApp.fetch(dispatchUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    },
+    payload: JSON.stringify({
+      event_type: 'sheets-updated',
+      client_payload: {
+        triggeredAt: new Date().toISOString()
+      }
+    }),
+    muteHttpExceptions: true
+  });
+
+  return {
+    dispatched: res.getResponseCode() === 204,
+    code: res.getResponseCode()
+  };
+}
+
+/**
  * Fungsi utama untuk sinkronisasi otomatis (dipanggil oleh Trigger atau Menu)
  */
 function autoSyncAll() {
   var payload = buildLogisticsPayload(true);
   var results = {};
+  try {
+    results.workflowDispatch = triggerGitHubWorkflow();
+  } catch (e) {
+    results.workflowDispatchError = e.toString();
+  }
   try {
     results.webhook = pushPayloadToWebhook(payload);
   } catch (e) {
