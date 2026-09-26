@@ -1,14 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import L from 'leaflet';
-import { 
-  MapPin, 
-  ExternalLink, 
-  Building2, 
-  Radio, 
-  ZoomIn, 
-  ZoomOut, 
-  LocateFixed 
+import {
+  MapPin,
+  ExternalLink,
+  Building2,
+  Radio,
+  ZoomIn,
+  ZoomOut,
+  LocateFixed,
 } from 'lucide-react';
+import { Pengiriman } from '../types';
 
 interface CityCoverage {
   id: string;
@@ -25,12 +26,21 @@ interface CityCoverage {
   radiusKm: number;
   description: string;
   isHub?: boolean;
+  keywords: string[];
+  waypoints: [number, number][];
 }
+
+interface CoverageMapPanelProps {
+  data?: Pengiriman[];
+}
+
+const OSRM_LOCAL_STORAGE_KEY = 'hub_kediri_osrm_routes_v1';
 
 // Exact HUB KEDIRI Coordinates & Location
 const HUB_INFO = {
   name: 'WH HCI KEDIRI',
-  address: 'Jl. Kertosono - Tulungagung No.134, Putih, Kec. Gampengrejo, Kabupaten Kediri, Jawa Timur 64182',
+  address:
+    'Jl. Kertosono - Tulungagung No.134, Putih, Kec. Gampengrejo, Kabupaten Kediri, Jawa Timur 64182',
   lat: -7.7552,
   lng: 112.0315,
   mapsUrl: 'https://maps.app.goo.gl/c1QqeuUehuHLxX4y9',
@@ -46,12 +56,14 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '0 km (Titik Asal)',
     travelTime: 'Depo Pusat',
     direction: 'Pusat Operasional Hub',
-    corridor: 'Jl. Kertosono - Tulungagung No.134, Putih, Gampengrejo',
+    corridor: 'Jl. Kertosono - Tulungagung No.134 ➔ Putih ➔ Kec. Gampengrejo ➔ Kab. Kediri',
     lat: HUB_INFO.lat,
     lng: HUB_INFO.lng,
     radiusKm: 12,
     description: HUB_INFO.address,
     isHub: true,
+    keywords: ['gampengrejo', 'putih'],
+    waypoints: [[HUB_INFO.lat, HUB_INFO.lng]],
   },
   {
     id: 'kediri_area',
@@ -61,11 +73,34 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 8 - 25 km',
     travelTime: '± 15 - 35 Menit',
     direction: 'Lokal Kediri Raya',
-    corridor: 'Jl. Raya Kediri-Kertosono ➔ Kota Kediri / Pare / Gurah / Kras',
+    corridor: 'Gampengrejo ➔ Jl. Mayor Bismo ➔ Kota Kediri ➔ Pare / Gurah / Ngadiluwih / Kras',
     lat: -7.8167,
     lng: 112.0167,
     radiusKm: 16,
-    description: 'Wilayah inti distribusi harian Kota Kediri, Pare, Grogol, Gurah, & sekitarnya.',
+    description:
+      'Wilayah inti distribusi harian Kota Kediri, Mojoroto, Pesantren, Pare, Grogol, Gurah, & sekitarnya.',
+    keywords: [
+      'kediri',
+      'pare',
+      'gurah',
+      'ngadiluwih',
+      'mojoroto',
+      'pesantren',
+      'grogol',
+      'banyakan',
+      'pagu',
+      'wates',
+      'kandat',
+      'plosoklaten',
+      'kandangan',
+      'papar',
+      'purwoasri',
+    ],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.785, 112.012],
+      [-7.8167, 112.0167],
+    ],
   },
   {
     id: 'nganjuk',
@@ -74,12 +109,20 @@ const COVERAGE_CITIES: CityCoverage[] = [
     schedule: 'Setiap Hari (Daily)',
     distance: '± 32 - 36 km',
     travelTime: '± 45 - 60 Menit',
-    direction: 'Utara',
-    corridor: 'Gampengrejo ➔ Papar ➔ Purwoasri ➔ Kertosono ➔ Baron ➔ Nganjuk Kota',
+    direction: 'Utara - Barat Laut',
+    corridor: 'Gampengrejo ➔ Papar ➔ Purwoasri ➔ Kertosono ➔ Baron ➔ Sukomoro ➔ Nganjuk Kota',
     lat: -7.6053,
     lng: 111.9038,
     radiusKm: 15,
-    description: 'Jalur harian reguler via Kertosono - Sukomoro - Nganjuk Kota.',
+    description: 'Jalur harian reguler via Kertosono - Baron - Sukomoro - Nganjuk Kota & Warujayeng.',
+    keywords: ['nganjuk', 'kertosono', 'baron', 'sukomoro', 'warujayeng', 'tanjunganom', 'prambon', 'pace', 'loceret', 'berbek'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.685, 112.075],
+      [-7.592, 112.095],
+      [-7.602, 111.995],
+      [-7.6053, 111.9038],
+    ],
   },
   {
     id: 'jombang',
@@ -89,11 +132,19 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 36 - 42 km',
     travelTime: '± 50 - 65 Menit',
     direction: 'Timur Laut',
-    corridor: 'Gampengrejo ➔ Kertosono ➔ Bandar Kedungmulyo ➔ Perak ➔ Jombang Kota',
+    corridor: 'Gampengrejo ➔ Purwoasri ➔ Mengkreng ➔ Bandar Kedungmulyo ➔ Perak ➔ Jombang Kota',
     lat: -7.5468,
     lng: 112.2331,
     radiusKm: 16,
-    description: 'Jalur harian reguler via Kertosono - Flyover Peterongan / Perak - Jombang Kota.',
+    description: 'Jalur harian reguler via Kertosono - Perak - Jombang Kota, Diwek, & Mojoagung.',
+    keywords: ['jombang', 'perak', 'diwek', 'mojoagung', 'peterongan', 'ploso', 'cukir', 'gudo', 'ngoro'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.685, 112.075],
+      [-7.592, 112.105],
+      [-7.568, 112.175],
+      [-7.5468, 112.2331],
+    ],
   },
   {
     id: 'tulungagung',
@@ -103,11 +154,19 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 38 - 45 km',
     travelTime: '± 55 - 75 Menit',
     direction: 'Selatan',
-    corridor: 'Gampengrejo ➔ Kota Kediri (Ngronggo) ➔ Kras ➔ Ngantru ➔ Tulungagung Kota',
+    corridor: 'Gampengrejo ➔ Ngronggo ➔ Ngadiluwih ➔ Kras ➔ Ngantru ➔ Kedungwaru ➔ Tulungagung Kota',
     lat: -8.0653,
     lng: 111.9015,
     radiusKm: 16,
-    description: 'Jalur harian reguler via Ngantru - Kras - Tulungagung Kota, Kauman & Boyolangu.',
+    description: 'Jalur harian reguler via Ngantru - Kedungwaru - Tulungagung Kota, Kauman, Ngunut & Boyolangu.',
+    keywords: ['tulungagung', 'ngantru', 'kedungwaru', 'boyolangu', 'kauman', 'ngunut', 'campurdarat', 'rejotangan'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.835, 112.012],
+      [-7.935, 111.975],
+      [-8.015, 111.925],
+      [-8.0653, 111.9015],
+    ],
   },
   {
     id: 'blitar',
@@ -117,11 +176,19 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 48 - 55 km',
     travelTime: '± 1 Jam 15 Mnt - 1.5 Jam',
     direction: 'Tenggara',
-    corridor: 'Gampengrejo ➔ Kediri Selatan ➔ Srengat ➔ Sananwetan ➔ Blitar Kota & Wlingi',
+    corridor: 'Gampengrejo ➔ Kediri Selatan ➔ Ringinrejo ➔ Srengat ➔ Sananwetan ➔ Blitar Kota & Wlingi',
     lat: -8.0983,
     lng: 112.1681,
     radiusKm: 17,
-    description: 'Jalur harian reguler via Srengat - Sananwetan - Wlingi - Blitar Kota & Kab.',
+    description: 'Jalur harian reguler via Srengat - Sananwetan - Kanigoro - Talun - Wlingi - Blitar Kota & Kab.',
+    keywords: ['blitar', 'srengat', 'wlingi', 'kanigoro', 'talun', 'sananwetan', 'kepanjenkidul', 'sukorejo', 'kesamben', 'lodoyo', 'sutojayan', 'ponggok', 'udem'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.845, 112.028],
+      [-7.965, 112.062],
+      [-8.065, 112.085],
+      [-8.0983, 112.1681],
+    ],
   },
   {
     id: 'trenggalek',
@@ -131,11 +198,19 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 68 - 76 km',
     travelTime: '± 1.5 - 2 Jam',
     direction: 'Barat Daya',
-    corridor: 'Gampengrejo ➔ Tulungagung ➔ Durenan ➔ Gandusari ➔ Trenggalek Kota',
+    corridor: 'Gampengrejo ➔ Tulungagung ➔ Kauman ➔ Durenan ➔ Pogalan ➔ Trenggalek Kota',
     lat: -8.0504,
     lng: 111.7161,
     radiusKm: 16,
-    description: 'Jalur harian reguler via Durenan - Gandusari - Trenggalek Kota & Panggul.',
+    description: 'Jalur harian reguler via Tulungagung - Durenan - Pogalan - Trenggalek Kota & Karangan.',
+    keywords: ['trenggalek', 'durenan', 'pogalan', 'gandusari', 'karangan', 'tugu', 'watulimo', 'prigi', 'panggul'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.935, 111.975],
+      [-8.065, 111.901],
+      [-8.072, 111.805],
+      [-8.0504, 111.7161],
+    ],
   },
   {
     id: 'madiun',
@@ -145,11 +220,20 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 74 - 82 km',
     travelTime: '± 1 Jam 40 Mnt (Non-Tol) / 55 Mnt (Tol)',
     direction: 'Barat Laut',
-    corridor: 'Gampengrejo ➔ Kertosono ➔ Nganjuk ➔ Saradan ➔ Caruban ➔ Madiun',
+    corridor: 'Gampengrejo ➔ Kertosono ➔ Nganjuk ➔ Wilangan ➔ Saradan ➔ Caruban ➔ Madiun Kota',
     lat: -7.6298,
     lng: 111.5239,
     radiusKm: 18,
-    description: 'Jalur harian reguler via Saradan - Caruban - Madiun Kota & Kabupaten.',
+    description: 'Jalur harian reguler via Nganjuk - Saradan - Caruban (Mejayan) - Madiun Kota & Jiwan.',
+    keywords: ['madiun', 'caruban', 'mejayan', 'saradan', 'wungu', 'jiwan', 'geger', 'dolopo', 'balerejo'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.592, 112.095],
+      [-7.605, 111.903],
+      [-7.558, 111.745],
+      [-7.547, 111.655],
+      [-7.6298, 111.5239],
+    ],
   },
   // Wilayah Khusus Perdin
   {
@@ -161,11 +245,20 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 95 - 105 km',
     travelTime: '± 2 Jam 15 Mnt (Non-Tol) / 1 Jam 20 Mnt (Tol)',
     direction: 'Barat',
-    corridor: 'Gampengrejo ➔ Nganjuk ➔ Caruban ➔ Madiun ➔ Maospati ➔ Magetan Kota',
+    corridor: 'Gampengrejo ➔ Nganjuk ➔ Caruban ➔ Madiun ➔ Maospati ➔ Sukomoro ➔ Magetan Kota',
     lat: -7.6534,
     lng: 111.3281,
     radiusKm: 16,
-    description: 'Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari SENIN.',
+    description: 'Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari SENIN (Maospati, Magetan, Plaosan).',
+    keywords: ['magetan', 'maospati', 'plaosan', 'karangrejo', 'barat', 'kawedanan', 'goranggareng'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.605, 111.903],
+      [-7.547, 111.655],
+      [-7.629, 111.523],
+      [-7.612, 111.425],
+      [-7.6534, 111.3281],
+    ],
   },
   {
     id: 'ponorogo',
@@ -176,11 +269,20 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 96 - 108 km',
     travelTime: '± 2 Jam 15 Mnt - 2.5 Jam',
     direction: 'Barat Daya',
-    corridor: 'Gampengrejo ➔ Caruban ➔ Madiun ➔ Dolopo ➔ Ponorogo Kota (Rute Truk Datar)',
+    corridor: 'Gampengrejo ➔ Caruban ➔ Madiun ➔ Geger ➔ Dolopo ➔ Mlilir ➔ Ponorogo Kota (Rute Truk Datar)',
     lat: -7.8687,
     lng: 111.4621,
     radiusKm: 16,
-    description: 'Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari RABU.',
+    description: 'Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari RABU via jalur datar Madiun - Dolopo.',
+    keywords: ['ponorogo', 'babadan', 'jenangan', 'siman', 'jetis', 'kauman ponorogo', 'sumoroto', 'balong'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.605, 111.903],
+      [-7.547, 111.655],
+      [-7.629, 111.523],
+      [-7.745, 111.512],
+      [-7.8687, 111.4621],
+    ],
   },
   {
     id: 'ngawi',
@@ -191,22 +293,145 @@ const COVERAGE_CITIES: CityCoverage[] = [
     distance: '± 92 - 102 km',
     travelTime: '± 2 Jam 10 Mnt (Non-Tol) / 1 Jam 15 Mnt (Tol)',
     direction: 'Barat Laut Jauh',
-    corridor: 'Gampengrejo ➔ Kertosono ➔ Nganjuk ➔ Caruban ➔ Karangjati ➔ Geneng ➔ Ngawi',
+    corridor: 'Gampengrejo ➔ Kertosono ➔ Nganjuk ➔ Caruban ➔ Karangjati ➔ Geneng ➔ Ngawi Kota',
     lat: -7.4042,
     lng: 111.4462,
     radiusKm: 16,
-    description: "Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari JUM'AT.",
+    description: "Wilayah Khusus Perdin - Jadwal pengiriman rutin setiap hari JUM'AT via Karangjati - Ngawi Kota.",
+    keywords: ['ngawi', 'karangjati', 'geneng', 'paron', 'jogorogo', 'widodaren', 'walikukun', 'mantingan'],
+    waypoints: [
+      [HUB_INFO.lat, HUB_INFO.lng],
+      [-7.605, 111.903],
+      [-7.547, 111.655],
+      [-7.475, 111.575],
+      [-7.4042, 111.4462],
+    ],
   },
 ];
 
-export default function CoverageMapPanel() {
+type MapTileTheme = 'osm' | 'satellite' | 'topo';
+
+interface OsrmCachedRoute {
+  coordinates: [number, number][];
+  distanceKm: string;
+  durationMin: number;
+}
+
+export default function CoverageMapPanel({ data = [] }: CoverageMapPanelProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
   const [selectedCity, setSelectedCity] = useState<CityCoverage>(COVERAGE_CITIES[0]);
-  const [mapTileTheme, setMapTileTheme] = useState<'dark' | 'voyager' | 'satellite'>('dark');
-  const [mapMode, setMapMode] = useState<'hud' | 'googlemaps'>('hud');
+  const [mapTileTheme, setMapTileTheme] = useState<MapTileTheme>('osm');
   const [activeFilter, setActiveFilter] = useState<'all' | 'daily' | 'perdin'>('all');
+  const [osrmRoutes, setOsrmRoutes] = useState<Record<string, OsrmCachedRoute>>(() => {
+    try {
+      const saved = localStorage.getItem(OSRM_LOCAL_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Hitung distribusi muatan aktif (Surat Jalan / DO & CBM) per wilayah kota secara otomatis
+  const cityShipmentStats = useMemo(() => {
+    const stats: Record<
+      string,
+      { count: number; totalCbm: number; orders: Pengiriman[]; drivers: string[] }
+    > = {};
+
+    COVERAGE_CITIES.forEach((c) => {
+      stats[c.id] = { count: 0, totalCbm: 0, orders: [], drivers: [] };
+    });
+
+    data.forEach((order) => {
+      const haystack = `${order.address || ''} ${order.name || ''}`.toLowerCase();
+      if (!haystack.trim()) return;
+
+      // Cari kecocokan dengan kota tujuan (prioritaskan luar Kediri lebih dulu agar spesifik)
+      const nonKediriCities = COVERAGE_CITIES.filter((c) => !c.isHub && c.id !== 'kediri_area');
+      let matchedCity = nonKediriCities.find((c) =>
+        c.keywords.some((kw) => haystack.includes(kw.toLowerCase()))
+      );
+
+      if (!matchedCity) {
+        const kediriCity = COVERAGE_CITIES.find((c) => c.id === 'kediri_area');
+        if (kediriCity && kediriCity.keywords.some((kw) => haystack.includes(kw.toLowerCase()))) {
+          matchedCity = kediriCity;
+        }
+      }
+
+      if (matchedCity) {
+        const entry = stats[matchedCity.id];
+        entry.count += 1;
+        entry.totalCbm += parseFloat(order.cbm || '0') || 0;
+        entry.orders.push(order);
+        if (order.driver && !entry.drivers.includes(order.driver)) {
+          entry.drivers.push(order.driver);
+        }
+      }
+    });
+
+    // Untuk Hub Kediri, tampilkan total seluruh wilayah
+    const totalAllCount = data.length;
+    const totalAllCbm = data.reduce((acc, o) => acc + (parseFloat(o.cbm || '0') || 0), 0);
+    stats['hub_kediri'] = {
+      count: totalAllCount,
+      totalCbm: totalAllCbm,
+      orders: data.slice(0, 6),
+      drivers: Array.from(new Set(data.map((d) => d.driver).filter(Boolean))),
+    };
+
+    return stats;
+  }, [data]);
+
+  // Ambil rute jalan raya sebenarnya via OSRM (100% Gratis Tanpa API Key) + Cache Lokal
+  useEffect(() => {
+    if (selectedCity.isHub) return;
+    if (osrmRoutes[selectedCity.id]) return;
+
+    let cancelled = false;
+    const fetchOsrmGeometry = async () => {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${HUB_INFO.lng},${HUB_INFO.lat};${selectedCity.lng},${selectedCity.lat}?overview=full&geometries=geojson`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const json = await res.json();
+        const route = json?.routes?.[0];
+        if (!route || !route.geometry?.coordinates || cancelled) return;
+
+        const latLngs: [number, number][] = route.geometry.coordinates.map(
+          (coord: [number, number]) => [coord[1], coord[0]]
+        );
+        const distanceKm = (route.distance / 1000).toFixed(1);
+        const durationMin = Math.round(route.duration / 60);
+
+        setOsrmRoutes((prev) => {
+          const updated = {
+            ...prev,
+            [selectedCity.id]: {
+              coordinates: latLngs,
+              distanceKm,
+              durationMin,
+            },
+          };
+          try {
+            localStorage.setItem(OSRM_LOCAL_STORAGE_KEY, JSON.stringify(updated));
+          } catch {
+            // Ignore storage quota
+          }
+          return updated;
+        });
+      } catch {
+        // Fallback otomatis ke waypoints koridor darat jika sedang offline
+      }
+    };
+
+    fetchOsrmGeometry();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCity, osrmRoutes]);
 
   // Initialize Leaflet Map with Performance Optimizations
   useEffect(() => {
@@ -225,56 +450,11 @@ export default function CoverageMapPanel() {
         wheelDebounceTime: 60,
       });
 
-      // High-DPI Fast Global CDN Tile Layer
-      const getTileConfig = (theme: 'dark' | 'voyager' | 'satellite') => {
-        if (theme === 'dark') {
-          return {
-            url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
-            options: {
-              maxZoom: 20,
-              subdomains: 'abcd',
-              tileSize: 512,
-              zoomOffset: -1,
-              updateWhenIdle: true,
-              keepBuffer: 6,
-            },
-          };
-        } else if (theme === 'satellite') {
-          return {
-            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            options: {
-              maxZoom: 19,
-              subdomains: 'abcd',
-              updateWhenIdle: true,
-              keepBuffer: 4,
-            },
-          };
-        } else {
-          // Voyager HD Street Map (Crystal clear, ultra fast)
-          return {
-            url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-            options: {
-              maxZoom: 20,
-              subdomains: 'abcd',
-              tileSize: 512,
-              zoomOffset: -1,
-              updateWhenIdle: true,
-              keepBuffer: 6,
-            },
-          };
-        }
-      };
-
-      const { url, options } = getTileConfig(mapTileTheme);
-      const tileLayer = L.tileLayer(url, options).addTo(map);
-
       mapInstanceRef.current = map;
-      (map as any)._customTileLayer = tileLayer;
 
       const markersGroup = L.layerGroup().addTo(map);
       markersGroupRef.current = markersGroup;
 
-      // Handle Smooth Container Resize without crash or tile tears
       if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
         const resizeObserver = new ResizeObserver(() => {
           if (mapInstanceRef.current) {
@@ -294,7 +474,6 @@ export default function CoverageMapPanel() {
     }
 
     return () => {
-      // Map cleanup on unmount
       if (mapInstanceRef.current) {
         if ((mapInstanceRef.current as any)._resizeObserver) {
           (mapInstanceRef.current as any)._resizeObserver.disconnect();
@@ -305,48 +484,69 @@ export default function CoverageMapPanel() {
     };
   }, []);
 
-  // Update Tile Layer when theme changes
+  // Update Tile Layer when theme changes (3 Free Providers Without API Key)
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
+
     if ((map as any)._customTileLayer) {
       map.removeLayer((map as any)._customTileLayer);
+      (map as any)._customTileLayer = null;
+    }
+    if ((map as any)._customOverlayLayer) {
+      map.removeLayer((map as any)._customOverlayLayer);
+      (map as any)._customOverlayLayer = null;
     }
 
-    let url = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png';
-    let options: L.TileLayerOptions = {
-      maxZoom: 20,
-      subdomains: 'abcd',
-      tileSize: 512,
-      zoomOffset: -1,
-      updateWhenIdle: true,
-      keepBuffer: 6,
-    };
+    let baseLayer: L.TileLayer;
+    let overlayLayer: L.TileLayer | null = null;
 
     if (mapTileTheme === 'satellite') {
-      url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      options = {
-        maxZoom: 19,
+      // Esri World Imagery + Hybrid Reference Labels (100% Free, No API Key)
+      baseLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          updateWhenIdle: true,
+          keepBuffer: 4,
+        }
+      );
+      overlayLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 19,
+          opacity: 0.85,
+          updateWhenIdle: true,
+        }
+      );
+    } else if (mapTileTheme === 'topo') {
+      // OpenTopoMap (Kontur Tanjakan & Pegunungan Jawa Timur)
+      baseLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        subdomains: 'abc',
         updateWhenIdle: true,
         keepBuffer: 4,
-      };
-    } else if (mapTileTheme === 'voyager') {
-      url = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
-      options = {
-        maxZoom: 20,
-        subdomains: 'abcd',
-        tileSize: 512,
-        zoomOffset: -1,
+      });
+    } else {
+      // Default: OpenStreetMap Standard (Detail Jalan Desa / Gang Lengkap)
+      baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        subdomains: 'abc',
         updateWhenIdle: true,
-        keepBuffer: 6,
-      };
+        keepBuffer: 4,
+      });
     }
 
-    const newTileLayer = L.tileLayer(url, options).addTo(map);
-    (map as any)._customTileLayer = newTileLayer;
+    baseLayer.addTo(map);
+    (map as any)._customTileLayer = baseLayer;
+
+    if (overlayLayer) {
+      overlayLayer.addTo(map);
+      (map as any)._customOverlayLayer = overlayLayer;
+    }
   }, [mapTileTheme]);
 
-  // Render Illuminated glowing zones, route lines, and city pins
+  // Render Illuminated glowing zones, real road route lines, and city pins
   useEffect(() => {
     if (!mapInstanceRef.current || !markersGroupRef.current) return;
     const markersGroup = markersGroupRef.current;
@@ -358,48 +558,60 @@ export default function CoverageMapPanel() {
       return c.category === activeFilter;
     });
 
-    // 1. Draw glowing connecting route beams from WH HCI Kediri to each destination
+    // 1. Gambar jalur koridor jalan raya (OSRM Real Road Geometry atau Waypoints Koridor)
     filtered.forEach((city) => {
       if (city.isHub) return;
       const isPerdin = city.category === 'perdin';
       const isSelected = selectedCity.id === city.id;
+      const cachedOsrm = osrmRoutes[city.id];
+      const pathCoords = cachedOsrm?.coordinates || city.waypoints;
 
-      // Glow route beam line
-      L.polyline(
-        [
-          [HUB_INFO.lat, HUB_INFO.lng],
-          [city.lat, city.lng],
-        ],
-        {
-          color: isPerdin ? '#f59e0b' : '#3b82f6',
-          weight: isSelected ? 4 : 2,
-          opacity: isSelected ? 0.9 : 0.45,
-          dashArray: isPerdin ? '6, 8' : '2, 6',
-          className: 'route-glow-line',
-        }
-      ).addTo(markersGroup);
+      // Halo luar untuk rute kota yang sedang dipilih
+      if (isSelected) {
+        L.polyline(pathCoords, {
+          color: isPerdin ? '#fbbf24' : '#38bdf8',
+          weight: 8,
+          opacity: 0.28,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(markersGroup);
+      }
+
+      // Garis utama koridor jalan raya
+      L.polyline(pathCoords, {
+        color: isSelected
+          ? isPerdin
+            ? '#fbbf24'
+            : '#38bdf8'
+          : isPerdin
+          ? '#f59e0b'
+          : '#3b82f6',
+        weight: isSelected ? 4 : 2.2,
+        opacity: isSelected ? 0.95 : 0.5,
+        dashArray: isSelected ? undefined : isPerdin ? '6, 8' : '3, 6',
+        className: 'route-glow-line',
+      }).addTo(markersGroup);
     });
 
-    // 2. Draw glowing polygon/circle zones around each city (Cahaya Peta)
+    // 2. Gambar zona cakupan wilayah & Pin Kota dengan status beban DO aktif
     filtered.forEach((city) => {
       const isHub = city.isHub;
       const isPerdin = city.category === 'perdin';
       const isSelected = selectedCity.id === city.id;
+      const cityStat = cityShipmentStats[city.id] || { count: 0, totalCbm: 0 };
 
       const zoneColor = isHub ? '#38bdf8' : isPerdin ? '#f59e0b' : '#3b82f6';
 
-      // Outer illuminated ambient halo
       L.circle([city.lat, city.lng], {
         radius: (city.radiusKm || 15) * 1000,
         color: zoneColor,
         fillColor: zoneColor,
-        fillOpacity: isSelected ? 0.22 : 0.1,
+        fillOpacity: isSelected ? 0.22 : 0.09,
         weight: isSelected ? 2.5 : 1.2,
-        opacity: isSelected ? 0.85 : 0.4,
+        opacity: isSelected ? 0.85 : 0.38,
         dashArray: isPerdin ? '4, 4' : undefined,
       }).addTo(markersGroup);
 
-      // Inner concentrated core glow
       if (isSelected || isHub) {
         L.circle([city.lat, city.lng], {
           radius: ((city.radiusKm || 15) * 1000) / 2.5,
@@ -411,14 +623,18 @@ export default function CoverageMapPanel() {
         }).addTo(markersGroup);
       }
 
-      // 3. Custom HTML Marker Pin
+      const badgeHtml =
+        !isHub && cityStat.count > 0
+          ? `<span style="margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: #10b981; color: #052e16; font-size: 9px; font-weight: 800;">${cityStat.count} DO</span>`
+          : '';
+
       const customIcon = L.divIcon({
         className: 'custom-map-pin',
         html: `
           <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -100%);">
             <div style="
-              width: ${isHub ? '34px' : '26px'};
-              height: ${isHub ? '34px' : '26px'};
+              width: ${isHub ? '34px' : isSelected ? '30px' : '26px'};
+              height: ${isHub ? '34px' : isSelected ? '30px' : '26px'};
               border-radius: 10px;
               background: ${
                 isHub
@@ -427,8 +643,8 @@ export default function CoverageMapPanel() {
                   ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
                   : 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)'
               };
-              border: 2px solid ${isHub ? '#ffffff' : isPerdin ? '#fde68a' : '#93c5fd'};
-              box-shadow: 0 0 ${isHub ? '22px #38bdf8' : isPerdin ? '16px #f59e0b' : '14px #3b82f6'};
+              border: 2px solid ${isHub ? '#ffffff' : isSelected ? '#38bdf8' : isPerdin ? '#fde68a' : '#93c5fd'};
+              box-shadow: 0 0 ${isHub ? '22px #38bdf8' : isSelected ? '20px #38bdf8' : isPerdin ? '14px #f59e0b' : '12px #3b82f6'};
               display: flex;
               align-items: center;
               justify-content: center;
@@ -440,17 +656,20 @@ export default function CoverageMapPanel() {
             </div>
             <div style="
               margin-top: 3px;
-              padding: 2px 8px;
+              padding: 2px 7px;
               border-radius: 6px;
-              background: rgba(10, 15, 26, 0.9);
-              border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.15)'};
+              background: rgba(9, 11, 18, 0.92);
+              border: 1px solid ${isSelected ? '#38bdf8' : 'rgba(255, 255, 255, 0.18)'};
               color: ${isSelected ? '#ffffff' : '#e2e8f0'};
               font-size: 10px;
               font-weight: ${isSelected || isHub ? 'bold' : '600'};
               white-space: nowrap;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.65);
+              display: flex;
+              align-items: center;
             ">
-              ${city.name.replace(' (Pusat Hub)', '').replace(' (Kota & Kab)', '')}
+              <span>${city.name.replace(' (Pusat Hub)', '').replace(' (Kota & Kab)', '')}</span>
+              ${badgeHtml}
             </div>
           </div>
         `,
@@ -461,22 +680,38 @@ export default function CoverageMapPanel() {
       marker.on('click', () => {
         setSelectedCity(city);
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([city.lat, city.lng], 10, { duration: 1 });
+          if (city.isHub) {
+            mapInstanceRef.current.flyTo([city.lat, city.lng], 10, { duration: 1 });
+          } else {
+            const bounds = L.latLngBounds([
+              [HUB_INFO.lat, HUB_INFO.lng],
+              [city.lat, city.lng],
+            ]);
+            mapInstanceRef.current.flyToBounds(bounds.pad(0.28), { duration: 1.1, maxZoom: 11 });
+          }
         }
       });
     });
-  }, [selectedCity, mapTileTheme, activeFilter]);
+  }, [selectedCity, mapTileTheme, activeFilter, osrmRoutes, cityShipmentStats]);
 
   const handleFlyTo = (city: CityCoverage) => {
     setSelectedCity(city);
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([city.lat, city.lng], city.isHub ? 11 : 10, { duration: 1.2 });
+      if (city.isHub) {
+        mapInstanceRef.current.flyTo([city.lat, city.lng], 10, { duration: 1.1 });
+      } else {
+        const bounds = L.latLngBounds([
+          [HUB_INFO.lat, HUB_INFO.lng],
+          [city.lat, city.lng],
+        ]);
+        mapInstanceRef.current.flyToBounds(bounds.pad(0.28), { duration: 1.1, maxZoom: 11 });
+      }
     }
   };
 
   const handleResetView = () => {
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([HUB_INFO.lat, HUB_INFO.lng], 9, { duration: 1.2 });
+      mapInstanceRef.current.flyTo([HUB_INFO.lat, HUB_INFO.lng], 9, { duration: 1.1 });
       setSelectedCity(COVERAGE_CITIES[0]);
     }
   };
@@ -495,11 +730,8 @@ export default function CoverageMapPanel() {
                 <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
                   {HUB_INFO.name}
                 </h2>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                  CENTRAL WAREHOUSE
-                </span>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                  AKTIF & TERHUBUNG
+                <span className="text-xs text-blue-300 font-semibold">
+                  · Central Warehouse · Bebas Kuota Peta (Offline-Ready)
                 </span>
               </div>
               <p className="text-xs text-zinc-300 mt-1 flex items-start gap-1.5 leading-relaxed">
@@ -509,7 +741,6 @@ export default function CoverageMapPanel() {
             </div>
           </div>
 
-          {/* Quick Action Button to Google Maps */}
           <div className="flex items-center gap-2 shrink-0">
             <a
               href={HUB_INFO.mapsUrl}
@@ -518,7 +749,7 @@ export default function CoverageMapPanel() {
               className="w-full md:w-auto px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 border border-blue-400/40 shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
             >
               <ExternalLink className="w-4 h-4" />
-              <span>Buka di Google Maps</span>
+              <span>Titik Gudang Hub</span>
             </a>
           </div>
         </div>
@@ -526,137 +757,93 @@ export default function CoverageMapPanel() {
 
       {/* Main Interactive Map & City Selector */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Real Leaflet / Google-style Map Canvas (8 cols) */}
-        <div className="lg:col-span-8 glossy-panel rounded-2xl p-3 sm:p-4 flex flex-col shadow-2xl overflow-hidden relative min-h-[480px]">
+        {/* Multi-Layer Zero-API-Key Map Canvas (8 cols) */}
+        <div className="lg:col-span-8 glossy-panel rounded-2xl p-3 sm:p-4 flex flex-col shadow-2xl overflow-hidden relative min-h-[490px]">
           {/* Map Controls Header */}
           <div className="flex items-center justify-between gap-2 pb-3 mb-2 border-b border-white/[0.08] z-10 flex-wrap">
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4 text-blue-400 animate-pulse" />
               <span className="text-xs font-bold text-white tracking-wider">
-                Peta Satelit & Wilayah Bercahaya
+                Peta Koridor Jalan Raya & Distribusi Wilayah
               </span>
             </div>
 
-            {/* Map Theme & Mode Controls */}
+            {/* 3 Free Map Layer Switcher (Tanpa API Key) */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Map Mode Picker */}
-              <div className="flex bg-black/60 rounded-xl p-1 border border-white/[0.08] text-[10px]">
-                <button
-                  onClick={() => {
-                    setMapMode('hud');
-                    setMapTileTheme('dark');
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    mapMode === 'hud' && mapTileTheme === 'dark'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Glow Dark
-                </button>
-                <button
-                  onClick={() => {
-                    setMapMode('hud');
-                    setMapTileTheme('voyager');
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    mapMode === 'hud' && mapTileTheme === 'voyager'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Jalan HD (@2x)
-                </button>
-                <button
-                  onClick={() => {
-                    setMapMode('hud');
-                    setMapTileTheme('satellite');
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
-                    mapMode === 'hud' && mapTileTheme === 'satellite'
-                      ? 'bg-blue-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Satelit
-                </button>
-                <button
-                  onClick={() => setMapMode('googlemaps')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                    mapMode === 'googlemaps'
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow'
-                      : 'text-zinc-400 hover:text-emerald-400'
-                  }`}
-                >
-                  <span>🌐 Google Maps Asli</span>
-                </button>
+              <div className="flex bg-black/60 rounded-xl p-1 border border-white/[0.08] text-[10px] flex-wrap gap-0.5">
+                {[
+                  { id: 'osm', label: 'Jalan Desa (OSM)' },
+                  { id: 'satellite', label: 'Satelit Hybrid' },
+                  { id: 'topo', label: 'Medan Tanjakan' },
+                ].map((layer) => (
+                  <button
+                    key={layer.id}
+                    onClick={() => setMapTileTheme(layer.id as MapTileTheme)}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                      mapTileTheme === layer.id
+                        ? 'bg-blue-600 text-white shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {layer.label}
+                  </button>
+                ))}
               </div>
 
               {/* Map Zoom / Reset Controls */}
-              {mapMode === 'hud' && (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => mapInstanceRef.current?.zoomIn()}
-                    title="Perbesar"
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => mapInstanceRef.current?.zoomOut()}
-                    title="Perkecil"
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
-                  >
-                    <ZoomOut className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleResetView}
-                    title="Pusatkan ke WH HCI Kediri"
-                    className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-blue-400 hover:text-blue-300 transition-all cursor-pointer"
-                  >
-                    <LocateFixed className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomIn()}
+                  title="Perbesar"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => mapInstanceRef.current?.zoomOut()}
+                  title="Perkecil"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={handleResetView}
+                  title="Pusatkan ke WH HCI Kediri"
+                  className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-blue-400 hover:text-blue-300 transition-all cursor-pointer"
+                >
+                  <LocateFixed className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Real Map Canvas Container */}
           <div className="flex-1 w-full rounded-xl overflow-hidden relative border border-white/[0.08] min-h-[420px]">
-            {mapMode === 'googlemaps' ? (
-              <iframe
-                title="Google Maps WH HCI KEDIRI"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3953.220194883187!2d112.0289251!3d-7.7552!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7851a31416b577%3A0xd320aeec05b0122!2sWH%20HCI%20KEDIRi!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
-                className="w-full h-full min-h-[420px] border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-            ) : (
-              <>
-                <div ref={mapContainerRef} className="w-full h-full min-h-[420px] z-0" />
+            <div ref={mapContainerRef} className="w-full h-full min-h-[420px] z-0" />
 
-                {/* Map Legend Overlay */}
-                <div className="absolute bottom-3 left-3 bg-black/85 backdrop-blur-md p-2.5 rounded-xl border border-white/[0.1] text-[10px] space-y-1.5 shadow-xl z-[400]">
-                  <div className="flex items-center gap-2 text-blue-300 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></span>
-                    <span>Jalur Daily (7 Wilayah)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-amber-300 font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span>
-                    <span>Khusus Perdin (3 Wilayah)</span>
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Map Legend Overlay */}
+            <div className="absolute bottom-3 left-3 bg-black/85 backdrop-blur-md p-2.5 rounded-xl border border-white/[0.12] text-[10px] space-y-1.5 shadow-xl z-[400]">
+              <div className="flex items-center gap-2 text-blue-300 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_#3b82f6]"></span>
+                <span>Jalur Daily (7 Wilayah)</span>
+              </div>
+              <div className="flex items-center gap-2 text-amber-300 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span>
+                <span>Khusus Perdin (Senin/Rabu/Jum&apos;at)</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-300 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+                <span>Rute Jalan Raya OSRM (Tanpa Kuota)</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Quick Filter & City Navigator (4 cols) */}
         <div className="lg:col-span-4 flex flex-col">
-          {/* Quick Filter & City Navigator */}
           <div className="glossy-panel rounded-2xl p-4 shadow-2xl space-y-2.5 flex-1 flex flex-col">
             <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">Pilih Wilayah</span>
+              <span className="text-xs font-bold text-white tracking-wider">Pilih Koridor Wilayah</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setActiveFilter('all')}
@@ -685,7 +872,7 @@ export default function CoverageMapPanel() {
               </div>
             </div>
 
-            <div className="space-y-1.5 overflow-y-auto max-h-[420px] scrollbar-hide pr-1 flex-1">
+            <div className="space-y-1.5 overflow-y-auto max-h-[430px] scrollbar-hide pr-1 flex-1">
               {COVERAGE_CITIES.filter((c) => {
                 if (activeFilter === 'all') return true;
                 if (c.isHub) return true;
@@ -693,24 +880,40 @@ export default function CoverageMapPanel() {
               }).map((city) => {
                 const isSelected = selectedCity.id === city.id;
                 const isPerdin = city.category === 'perdin';
+                const stat = cityShipmentStats[city.id] || { count: 0, totalCbm: 0 };
+
                 return (
                   <button
                     key={city.id}
                     onClick={() => handleFlyTo(city)}
-                    className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between cursor-pointer ${
+                    className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                       isSelected
                         ? 'bg-blue-600/30 border border-blue-400/50 shadow-[0_0_12px_rgba(59,130,246,0.3)]'
                         : 'bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.05]'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          city.isHub ? 'bg-sky-400' : isPerdin ? 'bg-amber-400' : 'bg-blue-400'
-                        }`}
-                      ></span>
-                      <span className="text-xs font-bold text-zinc-200 truncate">{city.name}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            city.isHub ? 'bg-sky-400' : isPerdin ? 'bg-amber-400' : 'bg-blue-400'
+                          }`}
+                        ></span>
+                        <span className="text-xs font-bold text-zinc-100 truncate">{city.name}</span>
+                      </div>
+                      <div className="text-[10px] text-zinc-400 pl-4 mt-0.5 flex items-center gap-1.5">
+                        <span>{city.distance}</span>
+                        {!city.isHub && stat.count > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="text-emerald-400 font-semibold tabular-nums">
+                              {stat.count} DO ({stat.totalCbm.toFixed(1)} m³)
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
+
                     <span
                       className={`text-[10px] font-semibold shrink-0 px-2 py-0.5 rounded ${
                         isPerdin

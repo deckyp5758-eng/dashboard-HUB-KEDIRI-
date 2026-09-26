@@ -636,7 +636,7 @@ export default function App() {
               }}
             >
               <div className="p-3 sm:p-5 max-w-7xl mx-auto space-y-4">
-                <CoverageMapPanel />
+                <CoverageMapPanel data={pengiriman} />
               </div>
             </div>
           </motion.div>
